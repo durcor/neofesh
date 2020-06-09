@@ -501,6 +501,7 @@ disk_percent="on"
 # mpd
 # muine
 # netease-cloud-music
+# playerctl
 # pogo
 # pragha
 # qmmp
@@ -774,8 +775,8 @@ image_source="auto"
 #       Manjaro, Maui, Mer, Minix, LinuxMint, MX_Linux, Namib,
 #       Neptune, NetBSD, Netrunner, Nitrux, NixOS, Nurunner,
 #       NuTyX, OBRevenge, OpenBSD, OpenIndiana, openmamba, OpenMandriva,
-#       OpenStage, OpenWrt, osmc, Oracle, PacBSD, Parabola, Pardus, Parrot,
-#       Parsix, TrueOS, PCLinuxOS, Peppermint, popos, Porteus,
+#       OpenStage, OpenWrt, osmc, Oracle, OS Elbrus, PacBSD, Parabola, Pardus,
+#       Parrot, Parsix, TrueOS, PCLinuxOS, Peppermint, popos, Porteus,
 #       PostMarketOS, Proxmox, Puppy, PureOS, Qubes, Radix, Raspbian,
 #       Reborn_OS, Redstar, Redcore, Redhat, Refracted_Devuan, Regata,
 #       Rosa, sabotage, Sabayon, Sailfish, SalentOS, Scientific, Septor,
@@ -783,7 +784,7 @@ image_source="auto"
 #       Solus, Source_Mage, Sparky, Star, SteamOS, SunOS, openSUSE_Leap,
 #       openSUSE_Tumbleweed, openSUSE, SwagArch, Tails, Trisquel,
 #       Ubuntu-Budgie, Ubuntu-GNOME, Ubuntu-MATE, Ubuntu-Studio, Ubuntu,
-#       Void, Obarun, windows10, Windows7, Xubuntu, Zorin, and IRIX
+#       Venom, Void, Obarun, windows10, Windows7, Xubuntu, Zorin, and IRIX
 #       have ascii logos
 # NOTE: Arch, Ubuntu, Redhat, and Dragonfly have 'old' logo variants.
 #       Use '{distro name}_old' to use the old logos.
@@ -956,6 +957,12 @@ get_distro() {
                 case $distro_shorthand in
                     on|tiny) distro=Siduction ;;
                     *) distro="Siduction ($(lsb_release -sic))"
+                esac
+
+            elif [[ -f /etc/mcst_version ]]; then
+                case $distro_shorthand in
+                    on|tiny) distro="OS Elbrus" ;;
+                    *) distro="OS Elbrus $(< /etc/mcst_version)"
                 esac
 
             elif type -p pveversion >/dev/null; then
@@ -1209,26 +1216,29 @@ get_model() {
 
         "iPhone OS")
             case $kernel_machine in
-                iPad1,1):      "iPad" ;;
-                iPad2,[1-4]):  "iPad 2" ;;
-                iPad3,[1-3]):  "iPad 3" ;;
-                iPad3,[4-6]):  "iPad 4" ;;
-                iPad6,1[12]):  "iPad 5" ;;
-                iPad7,[5-6]):  "iPad 6" ;;
-                iPad4,[1-3]):  "iPad Air" ;;
-                iPad5,[3-4]):  "iPad Air 2" ;;
-                iPad11,[3-4]): "iPad Air 3" ;;
-                iPad6,[7-8]):  "iPad Pro (12.9 Inch)" ;;
-                iPad6,[3-4]):  "iPad Pro (9.7 Inch)" ;;
-                iPad7,[1-2]):  "iPad Pro 2 (12.9 Inch)" ;;
-                iPad7,[3-4]):  "iPad Pro (10.5 Inch)" ;;
-                iPad8,[1-4]):  "iPad Pro (11 Inch)" ;;
-                iPad8,[5-8]):  "iPad Pro 3 (12.9 Inch)" ;;
-                iPad2,[5-7]):  "iPad mini" ;;
-                iPad4,[4-6]):  "iPad mini 2" ;;
-                iPad4,[7-9]):  "iPad mini 3" ;;
-                iPad5,[1-2]):  "iPad mini 4" ;;
-                iPad11,[1-2]): "iPad mini 5" ;;
+                iPad1,1):            "iPad" ;;
+                iPad2,[1-4]):        "iPad 2" ;;
+                iPad3,[1-3]):        "iPad 3" ;;
+                iPad3,[4-6]):        "iPad 4" ;;
+                iPad6,1[12]):        "iPad 5" ;;
+                iPad7,[5-6]):        "iPad 6" ;;
+                iPad7,1[12]):        "iPad 7" ;;
+                iPad4,[1-3]):        "iPad Air" ;;
+                iPad5,[3-4]):        "iPad Air 2" ;;
+                iPad11,[3-4]):       "iPad Air 3" ;;
+                iPad6,[7-8]):        "iPad Pro (12.9 Inch)" ;;
+                iPad6,[3-4]):        "iPad Pro (9.7 Inch)" ;;
+                iPad7,[1-2]):        "iPad Pro 2 (12.9 Inch)" ;;
+                iPad7,[3-4]):        "iPad Pro (10.5 Inch)" ;;
+                iPad8,[1-4]):        "iPad Pro (11 Inch)" ;;
+                iPad8,[5-8]):        "iPad Pro 3 (12.9 Inch)" ;;
+                iPad8,9 | iPad8,10): "iPad Pro 4 (11 Inch)" ;;
+                iPad8,1[1-2]):       "iPad Pro 4 (12.9 Inch)" ;;
+                iPad2,[5-7]):        "iPad mini" ;;
+                iPad4,[4-6]):        "iPad mini 2" ;;
+                iPad4,[7-9]):        "iPad mini 3" ;;
+                iPad5,[1-2]):        "iPad mini 4" ;;
+                iPad11,[1-2]):       "iPad mini 5" ;;
 
                 iPhone1,1):     "iPhone" ;;
                 iPhone1,2):     "iPhone 3G" ;;
@@ -1251,6 +1261,10 @@ get_model() {
                 iPhone11,2):    "iPhone XS" ;;
                 iPhone11,[46]): "iPhone XS Max" ;;
                 iPhone11,8):    "iPhone XR" ;;
+                iPhone12,1):    "iPhone 11" ;;
+                iPhone12,3):    "iPhone 11 Pro" ;;
+                iPhone12,5):    "iPhone 11 Pro Max" ;;
+                iPhone12,8):    "iPhone SE 2020" ;;
 
                 iPod1,1): "iPod touch" ;;
                 ipod2,1): "iPod touch 2G" ;;
@@ -1483,6 +1497,7 @@ get_packages() {
             has eopkg   && dir ${br_prefix}/var/lib/eopkg/package/*
             has crew    && dir ${br_prefix}/usr/local/etc/crew/meta/*.filelist
             has pkgtool && dir ${br_prefix}/var/log/packages/*
+            has scratch && dir ${br_prefix}/var/lib/scratchpkg/index/*/.pkginfo
             has kagami  && dir ${br_prefix}/var/lib/kagami/pkgs/*
             has cave    && dir ${br_prefix}/var/db/paludis/repositories/cross-installed/*/data/*/ \
                                ${br_prefix}/var/db/paludis/repositories/installed/data/*/
@@ -2112,12 +2127,12 @@ get_cpu() {
                 "iPhone6,"[1-2]): "Apple A7 (2) @ 1.3GHz" ;;
                 "iPhone7,"[1-2]): "Apple A8 (2) @ 1.4GHz" ;;
                 "iPhone8,"[1-4] | "iPad6,1"[12]): "Apple A9 (2) @ 1.85GHz" ;;
-                "iPhone9,"[1-4] | "iPad7,"[5-6]): "Apple A10 Fusion (4) @ 2.34GHz" ;;
-                "iPhone10,"[1-6]): "Apple A11 Bionic (6) @ 2.39GHz" ;;
-
-                "iPhone11,"[2468] | "iPad11,"[1-4])
-                    : "Apple A12 Bionic (6) @ 2.49GHz"
+                "iPhone9,"[1-4] | "iPad7,"[5-6] | "iPad7,1"[1-2]):
+                    "Apple A10 Fusion (4) @ 2.34GHz"
                 ;;
+                "iPhone10,"[1-6]): "Apple A11 Bionic (6) @ 2.39GHz" ;;
+                "iPhone11,"[2468] | "iPad11,"[1-4]): "Apple A12 Bionic (6) @ 2.49GHz" ;;
+                "iPhone12,"[1358]): "Apple A13 Bionic (6) @ 2.65GHz" ;;
 
                 "iPod2,1"): "Samsung S5L8720 (1) @ 533MHz" ;;
                 "iPod3,1"): "Samsung S5L8922 (1) @ 600MHz" ;;
@@ -2134,6 +2149,7 @@ get_cpu() {
                 "iPad6,"[7-8]): "Apple A9X (2) @ 2.26GHz" ;;
                 "iPad7,"[1-4]): "Apple A10X Fusion (6) @ 2.39GHz" ;;
                 "iPad8,"[1-8]): "Apple A12X Bionic (8) @ 2.49GHz" ;;
+                "iPad8,9" | "iPad8,1"[0-2]): "Apple A12Z Bionic (8) @ 2.49GHz" ;;
             esac
             cpu="$_"
         ;;
@@ -2400,6 +2416,10 @@ get_gpu() {
                         [[ -z "$(trim "$gpu")" ]] && gpu="Intel Integrated Graphics"
                     ;;
 
+                    *"MCST"*)
+                        gpu="${gpu/*MCST*MGA2*/MCST MGA2}"
+                    ;;
+
                     *"VirtualBox"*)
                         gpu="VirtualBox Graphics Adapter"
                     ;;
@@ -2435,37 +2455,24 @@ get_gpu() {
 
         "iPhone OS")
             case $kernel_machine in
-                "iPhone1,"[1-2]):   "PowerVR MBX Lite 3D" ;;
-                "iPhone5,"[1-4]):   "PowerVR SGX543MP3" ;;
-                "iPhone11,"[2468]): "G11P" ;;
+                "iPhone1,"[1-2]):                             "PowerVR MBX Lite 3D" ;;
+                "iPhone2,1" | "iPhone3,"[1-3] | "iPod3,1" | "iPod4,1" | "iPad1,1"):
+                    "PowerVR SGX535"
+                ;;
+                "iPhone4,1" | "iPad2,"[1-7] | "iPod5,1"):     "PowerVR SGX543MP2" ;;
+                "iPhone5,"[1-4]):                             "PowerVR SGX543MP3" ;;
+                "iPhone6,"[1-2] | "iPad4,"[1-9]):             "PowerVR G6430" ;;
+                "iPhone7,"[1-2] | "iPod7,1" | "iPad5,"[1-2]): "PowerVR GX6450" ;;
+                "iPhone8,"[1-4] | "iPad6,1"[12]):             "PowerVR GT7600" ;;
+                "iPhone9,"[1-4] | "iPad7,"[5-6]):             "PowerVR GT7600 Plus" ;;
+                "iPhone10,"[1-6]):                            "Apple Designed GPU (A11)" ;;
+                "iPhone11,"[2468]):                           "Apple Designed GPU (A12)" ;;
+                "iPhone12,"[1358]):                           "Apple Designed GPU (A13)" ;;
+
                 "iPad3,"[1-3]):     "PowerVR SGX534MP4" ;;
                 "iPad3,"[4-6]):     "PowerVR SGX554MP4" ;;
                 "iPad5,"[3-4]):     "PowerVR GXA6850" ;;
                 "iPad6,"[3-8]):     "PowerVR 7XT" ;;
-
-                "iPhone2,1" | "iPhone3,"[1-3] | "iPod3,1" | "iPod4,1" | "iPad1,1")
-                    : "PowerVR SGX535"
-                ;;
-
-                "iPhone4,1" | "iPad2,"[1-7] | "iPod5,1")
-                    : "PowerVR SGX543MP2"
-                ;;
-
-                "iPhone6,"[1-2] | "iPad4,"[1-9])
-                    : "PowerVR G6430"
-                ;;
-
-                "iPhone7,"[1-2] | "iPod7,1" | "iPad5,"[1-2])
-                    : "PowerVR GX6450"
-                ;;
-
-                "iPhone8,"[1-4] | "iPad6,1"[12])
-                    : "PowerVR GT7600"
-                ;;
-
-                "iPhone9,"[1-4] | "iPad7,"[5-6])
-                    : "PowerVR GT7600 Plus"
-                ;;
 
                 "iPod1,1" | "iPod2,1")
                     : "PowerVR MBX Lite"
@@ -2475,8 +2482,11 @@ get_gpu() {
         ;;
 
         "Windows")
-            gpu="$(wmic path Win32_VideoController get caption)"
-            gpu="${gpu//Caption}"
+            while read -r line; do
+                prin "${subtitle:+${subtitle}${gpu_name}}" "$(trim "$line")"
+            done < <(wmic path Win32_VideoController get caption)
+
+            gpu=${gpu//Caption}
         ;;
 
         "Haiku")
@@ -2660,6 +2670,7 @@ get_song() {
         "muine"
         "netease-cloud-music"
         "plasma-browser-integration"
+        "playerctl"
         "pogo"
         "pragha"
         "qmmp"
@@ -2795,6 +2806,10 @@ get_song() {
                     awk -F'"' 'BEGIN {RS=" entry"}; /"artist"/ {a=$4} /"album"/ {b=$4}
                     /"title"/ {t=$4} END {print a " \n" b " \n" t}')"
         ;;
+        
+        "playerctl"*)
+            song="$(playerctl metadata --format '{{ artist }} \n{{ album }} \n{{ title }}')"
+         ;;
 
         *) mpc &>/dev/null && song="$(mpc -f '%artist% \n%album% \n%title%' current)" || return ;;
     esac
@@ -3506,7 +3521,7 @@ get_disk() {
     for disk in "${disks[@]}"; do
         # Create a second array and make each element split at whitespace this time.
         IFS=" " read -ra disk_info <<< "$disk"
-        disk_perc=${disk_info[4]/\%}
+        disk_perc=${disk_info[-2]/\%}
 
         case $disk_percent in
             off) disk_perc=
@@ -3514,29 +3529,29 @@ get_disk() {
 
         case $df_version in
             *befhikm*)
-                disk="$((disk_info[2]/1024/1024))G / $((disk_info[1]/1024/1024))G"
+                disk="$((disk_info[-4]/1024/1024))G / $((disk_info[-5]/1024/1024))G"
                 disk+="${disk_perc:+ ($disk_perc%)}"
             ;;
 
             *)
-                disk="${disk_info[2]/i} / ${disk_info[1]/i}${disk_perc:+ ($disk_perc%)}"
+                disk="${disk_info[-4]/i} / ${disk_info[-5]/i}${disk_perc:+ ($disk_perc%)}"
             ;;
         esac
 
         case $disk_subtitle in
             name)
-                disk_sub=${disk_info[0]}
+                disk_sub=${disk_info[*]::${#disk_info[@]}-5}
             ;;
 
             dir)
-                disk_sub=${disk_info[5]/*\/}
-                disk_sub=${disk_sub:-${disk_info[5]}}
+                disk_sub=${disk_info[-1]/*\/}
+                disk_sub=${disk_sub:-${disk_info[-1]}}
             ;;
 
             none) ;;
 
             *)
-                disk_sub=${disk_info[5]}
+                disk_sub=${disk_info[-1]}
             ;;
         esac
 
@@ -4851,33 +4866,31 @@ ASCII:
     --ascii_distro distro       Which Distro's ascii art to print
 
                                 NOTE: AIX, Alpine, AlterLinux, Anarchy, Android, Antergos, antiX,
-                                \"AOSC OS\", \"AOSC OS/Retro\", Apricity, ArcoLinux, ArchBox, ARCHlabs,
-                                ArchStrike, XFerience, ArchMerge, Arch, Artix, Arya, Bedrock, Bitrig,
-                                BlackArch, BLAG, BlankOn, BlueLight, bonsai, BSD,
-                                BunsenLabs, Calculate, Carbs, CentOS, Chakra, ChaletOS,
-                                Chapeau, Chrom, Cleanjaro, ClearOS, Clear_Linux, Clover,
-                                Condres, Container_Linux, CRUX, Cucumber, Debian, Deepin,
-                                DesaOS, Devuan, DracOS, DragonFly, Drauger, Elementary,
-                                EndeavourOS, Endless, EuroLinux, Exherbo, Fedora, Feren, FreeBSD,
-                                FreeMiNT, Frugalware, Funtoo, GalliumOS, Gentoo, Pentoo,
-                                gNewSense, GNOME, GNU, GoboLinux, Grombyang, Guix, Haiku, Huayra,
-                                Hyperbola, janus, Kali, KaOS, KDE_neon, Kibojoe, Kogaion,
-                                Korora, KSLinux, Kubuntu, LEDE, LFS, Linux_Lite,
-                                LMDE, Lubuntu, Lunar, macos, Mageia, MagpieOS, Mandriva,
-                                Manjaro, Maui, Mer, Minix, LinuxMint, MX_Linux, Namib,
-                                Neptune, NetBSD, Netrunner, Nitrux, NixOS, Nurunner,
-                                NuTyX, OBRevenge, OpenBSD, OpenIndiana, openmamba, OpenMandriva,
-                                OpenStage, OpenWrt, osmc, Oracle, PacBSD, Parabola, Pardus, Parrot,
-                                Parsix, TrueOS, PCLinuxOS, Peppermint, popos, Porteus,
-                                PostMarketOS, Proxmox, Puppy, PureOS, Qubes, Radix, Raspbian,
-                                Reborn_OS, Redstar, Redcore, Redhat, Refracted_Devuan, Regata,
-                                Rosa, sabotage, Sabayon, Sailfish, SalentOS, Scientific, Septor,
-                                SereneLinux, SharkLinux, Siduction, Slackware, SliTaz, SmartOS,
-                                Solus, Source_Mage, Sparky, Star, SteamOS, SunOS, openSUSE_Leap,
-                                openSUSE_Tumbleweed, openSUSE, SwagArch, Tails, Trisquel,
-                                Ubuntu-Budgie, Ubuntu-GNOME, Ubuntu-MATE, Ubuntu-Studio, Ubuntu,
-                                Void, Obarun, windows10, Windows7, Xubuntu, Zorin, and IRIX
-                                have ascii logos
+                                \"AOSC OS\", \"AOSC OS/Retro\", Apricity, ArcoLinux, ArchBox,
+                                ARCHlabs, ArchStrike, XFerience, ArchMerge, Arch, Artix, Arya,
+                                Bedrock, Bitrig, BlackArch, BLAG, BlankOn, BlueLight, bonsai, BSD,
+                                BunsenLabs, Calculate, Carbs, CentOS, Chakra, ChaletOS, Chapeau,
+                                Chrom, Cleanjaro, ClearOS, Clear_Linux, Clover, Condres,
+                                Container_Linux, CRUX, Cucumber, Debian, Deepin, DesaOS, Devuan,
+                                DracOS, DragonFly, Drauger, Elementary, EndeavourOS, Endless,
+                                EuroLinux, Exherbo, Fedora, Feren, FreeBSD, FreeMiNT, Frugalware,
+                                Funtoo, GalliumOS, Gentoo, Pentoo, gNewSense, GNOME, GNU, GoboLinux,
+                                Grombyang, Guix, Haiku, Huayra, Hyperbola, janus, Kali, KaOS,
+                                KDE_neon, Kibojoe, Kogaion, Korora, KSLinux, Kubuntu, LEDE, LFS,
+                                Linux_Lite, LMDE, Lubuntu, Lunar, macos, Mageia, MagpieOS, Mandriva,
+                                Manjaro, Maui, Mer, Minix, LinuxMint, MX_Linux, Namib, Neptune,
+                                NetBSD, Netrunner, Nitrux, NixOS, Nurunner, NuTyX, OBRevenge,
+                                OpenBSD, OpenIndiana, openmamba, OpenMandriva, OpenStage, OpenWrt,
+                                osmc, Oracle, OS Elbrus, PacBSD, Parabola, Pardus, Parrot, Parsix,
+                                TrueOS, PCLinuxOS, Peppermint, popos, Porteus, PostMarketOS,
+                                Proxmox, Puppy, PureOS, Qubes, Radix, Raspbian, Reborn_OS, Redstar,
+                                Redcore, Redhat, Refracted_Devuan, Regata, Rosa, sabotage, Sabayon,
+                                Sailfish, SalentOS, Scientific, Septor, SereneLinux, SharkLinux,
+                                Siduction, Slackware, SliTaz, SmartOS, Solus, Source_Mage, Sparky,
+                                Star, SteamOS, SunOS, openSUSE_Leap, openSUSE_Tumbleweed, openSUSE,
+                                SwagArch, Tails, Trisquel, Ubuntu-Budgie, Ubuntu-GNOME, Ubuntu-MATE,
+                                Ubuntu-Studio, Ubuntu, Venom, Void, Obarun, windows10, Windows7,
+                                Xubuntu, Zorin, and IRIX have ascii logos
 
                                 NOTE: Arch, Ubuntu, Redhat, and Dragonfly have 'old' logo variants.
 
@@ -8416,6 +8429,26 @@ ${c1}
 EOF
         ;;
 
+        "OS Elbrus"*)
+            set_colors 4 7 3
+            read -rd '' ascii_data <<'EOF'
+${c1}   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+   ██▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀██
+   ██                       ██
+   ██   ███████   ███████   ██
+   ██   ██   ██   ██   ██   ██
+   ██   ██   ██   ██   ██   ██
+   ██   ██   ██   ██   ██   ██
+   ██   ██   ██   ██   ██   ██
+   ██   ██   ███████   ███████
+   ██   ██                  ██
+   ██   ██▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄██
+   ██   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀██
+   ██                       ██
+   ███████████████████████████
+EOF
+        ;;
+
         "PacBSD"*)
             set_colors 1 7 3
             read -rd '' ascii_data <<'EOF'
@@ -9918,6 +9951,27 @@ oss${c2}yNMMMNyMMh${c1}sssssssssssssshmmmh${c1}ssssssso
       -+sssssssssssssssss${c2}yyy${c1}ssss+-
         `:+ssssssssssssssssss+:`
             .-/+oossssoo+/-.
+EOF
+        ;;
+
+        "Venom"*)
+            set_colors 8 4
+            read -rd '' ascii_data <<'EOF'
+${c1}   :::::::          :::::::
+   mMMMMMMm        dMMMMMMm
+   /MMMMMMMo      +MMMMMMM/
+    yMMMMMMN      mMMMMMMy
+     NMMMMMMs    oMMMMMMm
+     +MMMMMMN:   NMMMMMM+
+      hMMMMMMy  sMMMMMMy
+      :NMMMMMM::NMMMMMN:
+       oMMMMMMyyMMMMMM+
+        dMMMMMMMMMMMMh
+        /MMMMMMMMMMMN:
+         sMMMMMMMMMMo
+          mMMMMMMMMd
+          +MMMMMMMN:
+            ::::::
 EOF
         ;;
 
