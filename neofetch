@@ -3127,6 +3127,10 @@ get_term() {
     [[ "$TERM" == "tw52" || "$TERM" == "tw100" ]] && term="TosWin2"
     [[ "$SSH_CONNECTION" ]] && term="$SSH_TTY"
 
+    [[ "$TERM" == "tmux" || "$TERM" == "tmux-256color" || \
+        "$TERM" == "screen" || "$TERM" == "screen-256color" ]] \
+        && muxer=$(echo "$TERM" | sed 's/-/ /' | awk '{print $1}')
+
     # Check $PPID for terminal emulator.
     while [[ -z "$term" ]]; do
         parent="$(get_ppid "$parent")"
@@ -3164,6 +3168,10 @@ get_term() {
         esac
     done
 
+    [[ -z $term ]] && term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+
+    [[ -n $muxer ]] && term+=" + $muxer"
+
     # Log that the function was run.
     term_run=1
 }
@@ -3179,10 +3187,11 @@ get_term_font() {
 
             [[ -f "${confs[0]}" ]] || return
 
-            term_font="$(awk -F ':|#' '/normal:/ {getline; print}' "${confs[0]}")"
-            term_font="${term_font/*family:}"
-            term_font="${term_font/$'\n'*}"
-            term_font="${term_font/\#*}"
+            term_font="$(awk '/family:/ {$1="";print}' "${confs[0]}" | head -n1)"
+            # term_font="$(awk -F ':|#' '/normal:/ {getline; print}' "${confs[0]}")"
+            # term_font="${term_font/*family:}"
+            # term_font="${term_font/$'\n'*}"
+            # term_font="${term_font/\#*}"
         ;;
 
         "Apple_Terminal")
@@ -5746,26 +5755,45 @@ EOF
         "Arch"*)
             set_colors 6 6 7 1
             read -rd '' ascii_data <<'EOF'
-${c1}                   -`
-                  .o+`
-                 `ooo/
-                `+oooo:
-               `+oooooo:
-               -+oooooo+:
-             `/:-:++oooo+:
-            `/++++/+++++++:
-           `/++++++++++++++:
-          `/+++o${c2}oooooooo${c1}oooo/`
-${c2}         ${c1}./${c2}ooosssso++osssssso${c1}+`
-${c2}        .oossssso-````/ossssss+`
-       -osssssso.      :ssssssso.
-      :osssssss/        osssso+++.
-     /ossssssss/        +ssssooo/-
-   `/ossssso+/:-        -:/+osssso+-
-  `+sso+:-`                 `.-/+oso:
- `++:.                           `-/+/
- .`                                 `/
+${c2}
+       .---.`               `.---.'
+    `/syhhhyso-           -osyhhhys/`'
+   .syN${c1}MdhNNh${c2}ss/``.---.``/ssh${c1}NNhdM${c2}Nys.'
+   +sd${c1}Mh.`+MN${c2}sssssssssssssss${c1}NM+`.hM${c2}ds+'
+   :sy${c1}NNdhNN${c2}hsssssssssssssssh${c1}NNhdN${c2}Nys:'
+    /ssyhhhysssssssssssssssssyhhhyss/'
+    .ossssssssssssssssssssssssssssso.'
+   :sssssssssssssssssssssssssssssssss:'
+  /sssssssssssssssssssssssssssssssssss/'
+ :sssssssssssssoosssssssoosssssssssssss:'
+ osssssssssssssoosssssssoossssssssssssso'
+ osssssssssssyyyyhhhhhhhyyyyssssssssssso'
+ /yyyyyyhhd${c1}mmmmNNNNNNNNNNNmmmm${c2}dhhyyyyyy/'
+  smmm${c1}NNNNNNNNNNNNNNNNNNNNNNNNNNNNN${c2}mmms'
+   ${c1}/dNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNd/'
+    `:sdNNNNNNNNNNNNNNNNNNNNNNNNNds:`'
+       `-+shd$NNNNNNNNNNNNNNNdhs+-`'
+             `.-:///////:-.`'
 EOF
+# ${c1}                   -`
+#                   .o+`
+#                  `ooo/
+#                 `+oooo:
+#                `+oooooo:
+#                -+oooooo+:
+#              `/:-:++oooo+:
+#             `/++++/+++++++:
+#            `/++++++++++++++:
+#           `/+++o${c2}oooooooo${c1}oooo/`
+# ${c2}         ${c1}./${c2}ooosssso++osssssso${c1}+`
+# ${c2}        .oossssso-````/ossssss+`
+#        -osssssso.      :ssssssso.
+#       :osssssss/        osssso+++.
+#      /ossssssss/        +ssssooo/-
+#    `/ossssso+/:-        -:/+osssso+-
+#   `+sso+:-`                 `.-/+oso:
+#  `++:.                           `-/+/
+#  .`                                 `/
         ;;
 
         "artix_small"*)
