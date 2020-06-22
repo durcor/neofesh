@@ -1186,9 +1186,9 @@ get_model() {
 
             elif [[ -f /sys/devices/virtual/dmi/id/product_name ||
                     -f /sys/devices/virtual/dmi/id/product_version ]]; then
-                if [[ "$(cat /sys/devices/virtual/dmi/id/product_name)" = \
+                if [[ "$(< /sys/devices/virtual/dmi/id/product_name)" == \
                     "To Be Filled By O.E.M." ||
-                   "$(cat /sys/devices/virtual/dmi/id/product_name)" = \
+                   "$(< /sys/devices/virtual/dmi/id/product_name)" == \
                    "To Be Filled By O.E.M." ]]; then
                     model=" $(< /sys/devices/virtual/dmi/id/board_vendor)"
                     model+=" $(< /sys/devices/virtual/dmi/id/board_name)"
@@ -1877,6 +1877,18 @@ get_wm() {
     [[ $wm == *WINDOWMAKER* ]] && wm=wmaker
     [[ $wm == *GNOME*Shell* ]] && wm=Mutter
 
+    for statbar in excalibar i3blocks i3status polybar lemonbar; do
+        if pgrep $statbar >/dev/null; then
+            wm+=" + $statbar"
+        fi
+    done
+
+    for compositor in picom compton; do
+        if pgrep $compositor >/dev/null; then
+            wm+=" + $compositor"
+        fi
+    done
+
     wm_run=1
 }
 
@@ -2360,7 +2372,8 @@ get_gpu() {
     case $os in
         "Linux")
             if command -v glxinfo >/dev/null; then
-                gpu_cmd="$(glxinfo | \grep "OpenGL renderer" | awk -F':' '{print $2}' | awk -F'(' '{print $1}')"
+                gpu_cmd="$(glxinfo | awk -F':' '/OpenGL renderer/ {print $2}' | awk -F'(' '{print $1}')"
+                gpu_cmd+="@ $(awk '/*/{print $2}' /sys/class/drm/card0/device/pp_dpm_sclk)"
             else
                 # Read GPUs into array.
                 gpu_cmd="$(lspci -mm | awk -F '\"|\" \"|\\(' \
@@ -3127,9 +3140,11 @@ get_term() {
     [[ "$TERM" == "tw52" || "$TERM" == "tw100" ]] && term="TosWin2"
     [[ "$SSH_CONNECTION" ]] && term="$SSH_TTY"
 
-    [[ "$TERM" == "tmux" || "$TERM" == "tmux-256color" || \
-        "$TERM" == "screen" || "$TERM" == "screen-256color" ]] \
-        && muxer=$(echo "$TERM" | sed 's/-/ /' | awk '{print $1}')
+    if [[ $TMUX ]]; then
+        muxer="tmux"
+    elif [[ "$TERM" == "screen"* ]]; then
+        muxer="screen"
+    fi
 
     # Check $PPID for terminal emulator.
     while [[ -z "$term" ]]; do
@@ -3168,7 +3183,13 @@ get_term() {
         esac
     done
 
-    [[ -z $term ]] && term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+    if [[ -z $term ]]; then
+       if [[ "$WAYLAND_DISPLAY" ]]; then
+           term="$(swaymsg -t get_outputs)"
+       else
+           term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+       fi
+    fi
 
     [[ -n $muxer ]] && term+=" + $muxer"
 
@@ -3730,7 +3751,41 @@ get_gpu_driver() {
                           '/Display|3D|VGA/{nr[NR+2]}; NR in nr {printf $2 ", "; exit}')"
             gpu_driver="${gpu_driver%, }"
 
-            if [[ "$gpu_driver" == *"nvidia"* ]]; then
+            if [[ "$gpu_driver" == *"amdgpu"* \
+            || "$gpu_driver" == *"radeon"* \
+                ]]; then
+                gpu_driver+=" + RadeonSI"
+                IFS=$'\n'
+                for driver in $(vulkaninfo | awk '/driverName/{$1="";$2="";print}' | uniq);do
+                    # driver_version=$(vulkaninfo | awk '/apiVersion/ {print $4}')
+                    if [[ "$driver" == *"open"* ]]; then
+                        driver="AMDVLK"
+                        # driver+=" $driver_version"
+                    elif [[ "$driver" == *"pro"* ]]; then
+                        driver="AMDVLK-PRO"
+                        # driver+=" $driver_version"
+                    elif [[ "$driver" == *"radv"* ]] && vulkaninfo | grep -q ACO; then
+                        driver="RADV/ACO"
+                        # driver+=" $driver_version"
+                    fi
+                    gpu_driver+=" + $(echo "$driver" | tr '[:lower:]' '[:upper:]')"
+                done
+                for driver in $(clinfo | awk '/Driver/ {$1="";$2="";print}');do
+                    if [[ "$driver" == *"PAL"* ]]; then
+                        gpu_driver+=" + AMDGPU-PRO/PAL"
+                        # gpu_driver+=" + $driver_version"
+                    elif [[ "$driver" == *"HSA"* ]]; then
+                        driver_version=$(pacman -Q llvm-amdgpu | awk '{print $2}')
+                        gpu_driver+=" + ROCm"
+                        gpu_driver+=" ($driver_version)"
+                    else
+                        gpu_driver+=" + Clover"
+                        # gpu_driver+=" + $driver_version"
+                    fi
+                done
+                IFS=" "
+                # gpu_driver+=" ($(glxinfo | \grep 'OpenGL version string' | awk '{$1="";$2="";$3="";$4="";$5="";$6="";print}' | xargs | tr '[:upper:]' '[:lower:]'))"
+            elif [[ "$gpu_driver" == *"nvidia"* ]]; then
                 gpu_driver="$(< /proc/driver/nvidia/version)"
                 gpu_driver="${gpu_driver/*Module  }"
                 gpu_driver="NVIDIA ${gpu_driver/  *}"
