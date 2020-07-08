@@ -1602,6 +1602,10 @@ get_packages() {
     packages=${packages/pacman-key/pacman}
 }
 
+get_init() {
+    file -b /bin/init | awk '{print $4}'
+}
+
 get_shell() {
     case $shell_path in
         on)  shell="$SHELL " ;;
@@ -2372,7 +2376,7 @@ get_gpu() {
     case $os in
         "Linux")
             if command -v glxinfo >/dev/null; then
-                gpu_cmd="$(glxinfo | awk -F':' '/OpenGL renderer/ {print $2}' | awk -F'(' '{print $1}')"
+                gpu_cmd="$(glxinfo -B | awk -F':' '/OpenGL renderer/ {print $2}' | awk -F'(' '{print $1}')"
                 gpu_cmd+="@ $(awk '/*/{print $2}' /sys/class/drm/card0/device/pp_dpm_sclk)"
             else
                 # Read GPUs into array.
@@ -3751,38 +3755,38 @@ get_gpu_driver() {
                           '/Display|3D|VGA/{nr[NR+2]}; NR in nr {printf $2 ", "; exit}')"
             gpu_driver="${gpu_driver%, }"
 
-            if [[ "$gpu_driver" == *"amdgpu"* \
-            || "$gpu_driver" == *"radeon"* \
-                ]]; then
-                gpu_driver+=" + RadeonSI"
-                IFS=$'\n'
-                for driver in $(vulkaninfo | awk '/driverName/{$1="";$2="";print}' | uniq);do
-                    # driver_version=$(vulkaninfo | awk '/apiVersion/ {print $4}')
-                    if [[ "$driver" == *"open"* ]]; then
-                        driver="AMDVLK"
-                        # driver+=" $driver_version"
-                    elif [[ "$driver" == *"pro"* ]]; then
-                        driver="AMDVLK-PRO"
-                        # driver+=" $driver_version"
-                    elif [[ "$driver" == *"radv"* ]] && vulkaninfo | grep -q ACO; then
-                        driver="RADV/ACO"
-                        # driver+=" $driver_version"
-                    fi
-                    gpu_driver+=" + $(echo "$driver" | tr '[:lower:]' '[:upper:]')"
-                done
-                for driver in $(clinfo | awk '/Driver/ {$1="";$2="";print}');do
-                    if [[ "$driver" == *"PAL"* ]]; then
-                        gpu_driver+=" + AMDGPU-PRO/PAL"
-                        # gpu_driver+=" + $driver_version"
-                    elif [[ "$driver" == *"HSA"* ]]; then
-                        driver_version=$(pacman -Q llvm-amdgpu | awk '{print $2}')
-                        gpu_driver+=" + ROCm"
-                        gpu_driver+=" ($driver_version)"
+            gpu_driver=$(echo "$gpu_driver" | tr '[:lower:]' '[:upper:]')
+
+            if [[ "$gpu_driver" == "amdgpu" || "$gpu_driver" == "radeon" ]]; then
+                if [[ -f /usr/lib/dri/radeonsi_dri.so ]]; then
+                    gpu_driver+=" (RadeonSI"
+                elif [[ -f /usr/lib/x86_64-linux-gnu/dri/amdgpu_dri.so ]]; then
+                    gpu_driver+=" + AMDGPU-PRO/GLX"
+                fi
+                # IFS=$'\n'
+
+                [[ -f /usr/lib/libvulkan_radeon.so ]] && 
+                    gpu_driver+=" + RADV"
+                    command -v vulkaninfo >/dev/null && if vulkaninfo | grep -q ACO; then
+                        gpu_driver+="/ACO"
                     else
-                        gpu_driver+=" + Clover"
-                        # gpu_driver+=" + $driver_version"
+                        gpu_driver+="/LLVM"
                     fi
-                done
+                    # gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/radeon_icd.x86_64.json | sed -e 's/"//g' -e 's/,//'))"
+                [[ -f /usr/lib/amdvlk64.so ]] &&
+                    gpu_driver+=" + AMDVLK"
+                    # gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
+                [[ -f /opt/amdgpu-pro/lib/x86_64-linux-gnu/amdvlk64.so ]] &&
+                    gpu_driver+=" + AMDGPU-PRO/VLK"
+
+                [[ -f /opt/rocm/lib/libamdocl64.so ]] && 
+                    gpu_driver+=" + ROCm"
+                [[ -f /usr/lib/libMesaOpenCL.so.1 ]] && 
+                    gpu_driver+=" + Clover"
+                [[ -f /usr/lib/libamdocl64.so ]] && 
+                    gpu_driver+=" + AMDGPU-PRO/PAL"
+                gpu_driver+=")"
+                
                 IFS=" "
                 # gpu_driver+=" ($(glxinfo | \grep 'OpenGL version string' | awk '{$1="";$2="";$3="";$4="";$5="";$6="";print}' | xargs | tr '[:upper:]' '[:lower:]'))"
             elif [[ "$gpu_driver" == *"nvidia"* ]]; then
@@ -5832,12 +5836,12 @@ EOF
         "Arch"*)
             set_colors 6 6 7 1
             read -rd '' ascii_data <<'EOF'
-${c2}
+${c1}
        .---.`               `.---.'
     `/syhhhyso-           -osyhhhys/`'
-   .syN${c1}MdhNNh${c2}ss/``.---.``/ssh${c1}NNhdM${c2}Nys.'
-   +sd${c1}Mh.`+MN${c2}sssssssssssssss${c1}NM+`.hM${c2}ds+'
-   :sy${c1}NNdhNN${c2}hsssssssssssssssh${c1}NNhdN${c2}Nys:'
+   .syN${c3}MdhNNh${c1}ss/``.---.``/ssh${c3}NNhdM${c1}Nys.'
+   +sd${c3}Mh.`+MN${c1}sssssssssssssss${c3}NM+`.hM${c1}ds+'
+   :sy${c3}NNdhNN${c1}hsssssssssssssssh${c3}NNhdN${c1}Nys:'
     /ssyhhhysssssssssssssssssyhhhyss/'
     .ossssssssssssssssssssssssssssso.'
    :sssssssssssssssssssssssssssssssss:'
@@ -5845,9 +5849,9 @@ ${c2}
  :sssssssssssssoosssssssoosssssssssssss:'
  osssssssssssssoosssssssoossssssssssssso'
  osssssssssssyyyyhhhhhhhyyyyssssssssssso'
- /yyyyyyhhd${c1}mmmmNNNNNNNNNNNmmmm${c2}dhhyyyyyy/'
-  smmm${c1}NNNNNNNNNNNNNNNNNNNNNNNNNNNNN${c2}mmms'
-   ${c1}/dNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNd/'
+ /yyyyyyhhd${c3}mmmmNNNNNNNNNNNmmmm${c1}dhhyyyyyy/'
+  smmm${c3}NNNNNNNNNNNNNNNNNNNNNNNNNNNNN${c1}mmms'
+   ${c3}/dNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNd/'
     `:sdNNNNNNNNNNNNNNNNNNNNNNNNNds:`'
        `-+shd$NNNNNNNNNNNNNNNdhs+-`'
              `.-:///////:-.`'
