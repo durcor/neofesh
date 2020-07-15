@@ -3159,6 +3159,12 @@ get_term() {
         muxer="screen"
     fi
 
+    if [[ "$WAYLAND_DISPLAY" ]]; then
+        term="$(swaymsg -t get_outputs)"
+    else
+        term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+    fi
+
     # Check $PPID for terminal emulator.
     while [[ -z "$term" ]]; do
         parent="$(get_ppid "$parent")"
@@ -3195,14 +3201,6 @@ get_term() {
             ;;
         esac
     done
-
-    if [[ -z $term ]]; then
-       if [[ "$WAYLAND_DISPLAY" ]]; then
-           term="$(swaymsg -t get_outputs)"
-       else
-           term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
-       fi
-    fi
 
     [[ -n $muxer ]] && term+=" + $muxer"
 
@@ -4425,7 +4423,8 @@ prin() {
     length="${#length}"
 
     # Format the output.
-    string="${string/:/${reset}${colon_color}${separator:=:}${info_color}}"
+    # string="${string/:/${reset}${colon_color}${separator:=:}${info_color}}"
+    string="${string/:/${reset}${info_color}}"
     string="${subtitle_color}${bold}${string}"
 
     # Print the info.
