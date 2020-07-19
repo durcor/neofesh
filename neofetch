@@ -1607,7 +1607,7 @@ get_packages() {
 }
 
 get_init() {
-    file -b /bin/init | awk '{print $4}'
+    init=$(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1)
 }
 
 get_shell() {
@@ -3772,7 +3772,7 @@ get_gpu_driver() {
                 fi
                 # IFS=$'\n'
 
-                [[ -f /usr/lib/libvulkan_radeon.so ]] && 
+                [[ -f /usr/lib/libvulkan_radeon.so ]] &&
                     gpu_driver+=" + RADV"
                     command -v vulkaninfo >/dev/null && if vulkaninfo | grep -q ACO; then
                         gpu_driver+="/ACO"
@@ -3786,14 +3786,14 @@ get_gpu_driver() {
                 [[ -f /opt/amdgpu-pro/lib/x86_64-linux-gnu/amdvlk64.so ]] &&
                     gpu_driver+=" + AMDGPU-PRO/VLK"
 
-                [[ -f /opt/rocm/lib/libamdocl64.so ]] && 
+                [[ -f /opt/rocm/lib/libamdocl64.so ]] &&
                     gpu_driver+=" + ROCm"
-                [[ -f /usr/lib/libMesaOpenCL.so.1 ]] && 
+                [[ -f /usr/lib/libMesaOpenCL.so.1 ]] &&
                     gpu_driver+=" + Clover"
-                [[ -f /usr/lib/libamdocl64.so ]] && 
+                [[ -f /usr/lib/libamdocl64.so ]] &&
                     gpu_driver+=" + AMDGPU-PRO/PAL"
                 gpu_driver+=")"
-                
+
                 IFS=" "
                 # gpu_driver+=" ($(glxinfo | \grep 'OpenGL version string' | awk '{$1="";$2="";$3="";$4="";$5="";$6="";print}' | xargs | tr '[:upper:]' '[:lower:]'))"
             elif [[ "$gpu_driver" == *"nvidia"* ]]; then
@@ -4423,8 +4423,7 @@ prin() {
     length="${#length}"
 
     # Format the output.
-    # string="${string/:/${reset}${colon_color}${separator:=:}${info_color}}"
-    string="${string/:/${reset}${info_color}}"
+    string="${string/:/${reset}${colon_color}${separator:=:}${info_color}}"
     string="${subtitle_color}${bold}${string}"
 
     # Print the info.
