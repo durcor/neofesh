@@ -1187,6 +1187,9 @@ get_distro() {
         *)  machine_arch=$kernel_machine ;;
     esac
 
+    # Get init system in use
+    distro+=" ($(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1))"
+
     [[ $os_arch == on ]] && \
         distro+=" $machine_arch"
 
@@ -1616,10 +1619,6 @@ get_packages() {
     fi
 
     packages=${packages/pacman-key/pacman}
-}
-
-get_init() {
-    init=$(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1)
 }
 
 get_shell() {
