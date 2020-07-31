@@ -127,6 +127,16 @@ kernel_shorthand="on"
 # Supports: Everything except Windows and Haiku
 distro_shorthand="off"
 
+# Show/Hide OS Init system
+# Show 'systemd, runit' and etc in 'Distro:' output.
+# Default: 'on'
+# Values:  'on', 'off'
+# Flag:    --init_system
+# Example:
+# on:  'Arch Linux x86_64 (systemd)'
+# off: 'Arch Linux x86_64'
+init_system="on"
+
 # Show/Hide OS Architecture.
 # Show 'x86_64', 'x86' and etc in 'Distro:' output.
 #
@@ -1187,11 +1197,11 @@ get_distro() {
         *)  machine_arch=$kernel_machine ;;
     esac
 
-    # Get init system in use
-    distro+=" ($(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1))"
-
     [[ $os_arch == on ]] && \
         distro+=" $machine_arch"
+
+    [[ $init_system == on ]] && \
+        distro+=" ($(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1))"
 
     [[ ${ascii_distro:-auto} == auto ]] && \
         ascii_distro=$(trim "$distro")
@@ -3170,10 +3180,12 @@ get_term() {
         muxer="screen"
     fi
 
-    if [[ "$WAYLAND_DISPLAY" ]]; then
-        term="$(swaymsg -t get_outputs)"
-    else
-        term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+    if [[ "$DISPLAY" ]]; then
+        if [[ "$WAYLAND_DISPLAY" ]]; then
+            term="$(swaymsg -t get_outputs)"
+        else
+            term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
+        fi
     fi
 
     # Check $PPID for terminal emulator.
@@ -3214,6 +3226,14 @@ get_term() {
     done
 
     [[ -n $muxer ]] && term+=" + $muxer"
+
+    if [[ "$VIMRUNTIME" ]]; then
+        if [[ "$VIMRUNTIME" = *"nvim"* ]]; then
+            term+=" + nvim"
+        else
+            term+=" + vim"
+        fi
+    fi
 
     # Log that the function was run.
     term_run=1
@@ -3779,30 +3799,37 @@ get_gpu_driver() {
                 if [[ -f /usr/lib/dri/radeonsi_dri.so ]]; then
                     gpu_driver+=" (RadeonSI"
                 elif [[ -f /usr/lib/x86_64-linux-gnu/dri/amdgpu_dri.so ]]; then
-                    gpu_driver+=" + AMDGPU-PRO/GLX"
+                    gpu_driver+=" (AMDGPU-PRO/GLX"
                 fi
                 # IFS=$'\n'
 
-                [[ -f /usr/lib/libvulkan_radeon.so ]] &&
-                    gpu_driver+=" + RADV"
-                    command -v vulkaninfo >/dev/null && if vulkaninfo | grep -q ACO; then
-                        gpu_driver+="/ACO"
-                    else
-                        gpu_driver+="/LLVM"
-                    fi
-                    # gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/radeon_icd.x86_64.json | sed -e 's/"//g' -e 's/,//'))"
-                [[ -f /usr/lib/amdvlk64.so ]] &&
-                    gpu_driver+=" + AMDVLK"
-                    # gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
-                [[ -f /opt/amdgpu-pro/lib/x86_64-linux-gnu/amdvlk64.so ]] &&
-                    gpu_driver+=" + AMDGPU-PRO/VLK"
+                case "$(awk '/library/{print $2}' /usr/share/vulkan/icd.d/*64*.json)" in
+                    *"/usr/lib/libvulkan_radeon.so"*)
+                        gpu_driver+=" + RADV"
+                        command -v vulkaninfo >/dev/null && if vulkaninfo | grep -q ACO; then
+                            gpu_driver+="/ACO"
+                        else
+                            gpu_driver+="/LLVM"
+                        fi
+                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/radeon_icd.x86_64.json | sed -e 's/"//g' -e 's/,//'))"
+                        ;;
+                    *"/usr/lib/amdvlk64.so"*)
+                        gpu_driver+=" + AMDVLK"
+                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
+                        ;;
+                    *"/opt/amdgpu-pro/lib/x86_64-linux-gnu/amdvlk64.so"*)
+                        gpu_driver+=" + AMDGPU-PRO/VLK"
+                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
+                        ;;
+                esac
 
-                [[ -f /opt/rocm/lib/libamdocl64.so ]] &&
+                if [[ -f /opt/rocm/lib/libamdocl64.so ]]; then
                     gpu_driver+=" + ROCm"
-                [[ -f /usr/lib/libMesaOpenCL.so.1 ]] &&
+                elif [[ -f /usr/lib/libMesaOpenCL.so.1 ]]; then
                     gpu_driver+=" + Clover"
-                [[ -f /usr/lib/libamdocl64.so ]] &&
+                elif [[ -f /usr/lib/libamdocl64.so ]]; then
                     gpu_driver+=" + AMDGPU-PRO/PAL"
+                fi
                 gpu_driver+=")"
 
                 IFS=" "
