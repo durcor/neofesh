@@ -1232,9 +1232,7 @@ get_model() {
             elif [[ -f /sys/devices/virtual/dmi/id/product_name ||
                     -f /sys/devices/virtual/dmi/id/product_version ]]; then
                 if [[ "$(< /sys/devices/virtual/dmi/id/product_name)" == \
-                    "To Be Filled By O.E.M." ||
-                   "$(< /sys/devices/virtual/dmi/id/product_name)" == \
-                   "To Be Filled By O.E.M." ]]; then
+                    "To Be Filled By O.E.M." ]]; then
                     model=" $(< /sys/devices/virtual/dmi/id/board_vendor)"
                     model+=" $(< /sys/devices/virtual/dmi/id/board_name)"
                     model+=" [$(< /sys/devices/virtual/dmi/id/bios_version)]"
