@@ -5923,8 +5923,12 @@ EOF
         ;;
 
         "Arch"*)
-            set_colors 6 6 7 1
-            read -rd '' ascii_data <<'EOF'
+            case "$(uname -v)" in
+                *TKG*)
+                    distro="$(echo "$distro" | sed '0,/Arch/{s|Arch|FroggedArch}')"
+                    # distro="${distro/^Arch/FroggedArch}"
+                    set_colors 6 6 7 1
+                    read -rd '' ascii_data <<'EOF'
 ${c1}
        .---.`               `.---.'
     `/syhhhyso-           -osyhhhys/`'
@@ -5945,25 +5949,32 @@ ${c1}
        `-+shd$NNNNNNNNNNNNNNNdhs+-`'
              `.-:///////:-.`'
 EOF
-# ${c1}                   -`
-#                   .o+`
-#                  `ooo/
-#                 `+oooo:
-#                `+oooooo:
-#                -+oooooo+:
-#              `/:-:++oooo+:
-#             `/++++/+++++++:
-#            `/++++++++++++++:
-#           `/+++o${c2}oooooooo${c1}oooo/`
-# ${c2}         ${c1}./${c2}ooosssso++osssssso${c1}+`
-# ${c2}        .oossssso-````/ossssss+`
-#        -osssssso.      :ssssssso.
-#       :osssssss/        osssso+++.
-#      /ossssssss/        +ssssooo/-
-#    `/ossssso+/:-        -:/+osssso+-
-#   `+sso+:-`                 `.-/+oso:
-#  `++:.                           `-/+/
-#  .`                                 `/
+;;
+                *)
+                    set_colors 6 6 7 1
+                    read -rd '' ascii_data <<'EOF'
+${c1}                   -`
+                  .o+`
+                 `ooo/
+                `+oooo:
+               `+oooooo:
+               -+oooooo+:
+             `/:-:++oooo+:
+            `/++++/+++++++:
+           `/++++++++++++++:
+          `/+++o${c2}oooooooo${c1}oooo/`
+${c2}         ${c1}./${c2}ooosssso++osssssso${c1}+`
+${c2}        .oossssso-````/ossssss+`
+       -osssssso.      :ssssssso.
+      :osssssss/        osssso+++.
+     /ossssssss/        +ssssooo/-
+   `/ossssso+/:-        -:/+osssso+-
+  `+sso+:-`                 `.-/+oso:
+ `++:.                           `-/+/
+ .`                                 `/
+EOF
+                    ;;
+            esac
         ;;
 
         "artix_small"*)
