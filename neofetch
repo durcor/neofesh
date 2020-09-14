@@ -3858,41 +3858,7 @@ get_gpu_driver() {
             #   RADEON + Mesa 20.2.0 (RadeonSI + Clover) + AMDGPU-PRO (PAL)
             #   flgrx?
             if [[ "$gpu_driver" == "amdgpu" || "$gpu_driver" == "radeon" ]]; then
-                if [[ -f /usr/lib/dri/radeonsi_dri.so ]]; then
-                    gpu_driver+=" (RadeonSI"
-                elif [[ -f /usr/lib/x86_64-linux-gnu/dri/amdgpu_dri.so ]]; then
-                    gpu_driver+=" (AMDGPU-PRO/GLX"
-                fi
-                # IFS=$'\n'
-
-                case "$(awk '/library/{print $2}' /usr/share/vulkan/icd.d/*64*.json)" in
-                    *"/usr/lib/libvulkan_radeon.so"*)
-                        gpu_driver+=" + RADV"
-                        command -v vulkaninfo >/dev/null && if vulkaninfo | grep -q ACO; then
-                            gpu_driver+="/ACO"
-                        else
-                            gpu_driver+="/LLVM"
-                        fi
-                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/radeon_icd.x86_64.json | sed -e 's/"//g' -e 's/,//'))"
-                        ;;
-                    *"/usr/lib/amdvlk64.so"*)
-                        gpu_driver+=" + AMDVLK"
-                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
-                        ;;
-                    *"/opt/amdgpu-pro/lib/x86_64-linux-gnu/amdvlk64.so"*)
-                        gpu_driver+=" + AMDGPU-PRO/VLK"
-                        gpu_driver+=" ($(awk '/api/{print $2}' /usr/share/vulkan/icd.d/amd_icd64.json | sed -e 's/"//g' -e 's/,//'))"
-                        ;;
-                esac
-
-                if [[ -f /opt/rocm/lib/libamdocl64.so ]]; then
-                    gpu_driver+=" + ROCm"
-                elif [[ -f /usr/lib/libMesaOpenCL.so.1 ]]; then
-                    gpu_driver+=" + Clover"
-                elif [[ -f /usr/lib/libamdocl64.so ]]; then
-                    gpu_driver+=" + AMDGPU-PRO/PAL"
-                fi
-                gpu_driver+=")"
+                gpu_driver+=" ($ogl_driver + $vk_driver + $ocl_driver)"
 
                 IFS=" "
                 # gpu_driver+=" ($(glxinfo | \grep 'OpenGL version string' | awk '{$1="";$2="";$3="";$4="";$5="";$6="";print}' | xargs | tr '[:upper:]' '[:lower:]'))"
