@@ -1405,6 +1405,14 @@ get_kernel() {
             on|tiny) kernel=$kernel_version ;;
             *)       unset kernel ;;
         esac
+
+    [[ $kernel_compiler == on ]] &&
+        kernel+=" ($(
+            gzip -cd /proc/config.gz |
+            awk -F'=' '/CONFIG_CC_VERSION_TEXT/{print $2}' |
+            sed 's|version ||' | xargs | sed 's/[ \t]*$//' |
+            sed 's|(GCC) ||'
+                    ))"
 }
 
 get_uptime() {
