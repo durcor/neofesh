@@ -1214,7 +1214,10 @@ get_distro() {
         distro+=" $machine_arch"
 
     [[ $init_system == on ]] && \
-        distro+=" ($(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1))"
+        distro+=" (" &&
+        distro+="$(/lib/libc.so.6 | head -1 | awk -F'(' '{print $2}' | awk -F')' '{print $1}' | sed 's|GNU |g|')" &&
+        distro+=" + $(readlink -f /bin/init | sed 's|/| |g' | tr ' ' '\n' | tail -n1)" &&
+        distro+=")"
 
     [[ ${ascii_distro:-auto} == auto ]] && \
         ascii_distro=$(trim "$distro")
