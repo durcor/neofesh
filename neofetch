@@ -1688,6 +1688,18 @@ get_shell() {
             shell=${shell/Copyright*}
         ;;
 
+        zsh)
+            shell+=$("$SHELL" --version 2>&1)
+            shell=${shell/ $shell_name}
+            zsh_package_manager=$(
+                grep '\.zsh$' "$HOME/.zshrc" |
+                grep -v '#' |
+                grep -v '\[\[' |
+                tr '/' '\n' | tail -1 | awk -F'.' '{print $1}'
+            )
+            [[ "$zsh_package_manager" ]] && shell+="[$zsh_package_manager]"
+        ;;
+
         *)
             shell+=$("$SHELL" --version 2>&1)
             shell=${shell/ $shell_name}
