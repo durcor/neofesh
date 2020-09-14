@@ -1,0 +1,2 @@
+- add more color support to neofetch output
+    - ie. differentiating different parts of a line based on the pre-defined colors in the config
