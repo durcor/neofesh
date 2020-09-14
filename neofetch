@@ -2832,6 +2832,7 @@ get_song() {
         "xnoise"*)        get_song_dbus "xnoise" ;;
         "tauonmb"*)       get_song_dbus "tauon" ;;
         "olivia"*)        get_song_dbus "olivia" ;;
+        "exaile"*)        get_song_dbus "exaile" ;;
         "netease-cloud-music"*)        get_song_dbus "netease-cloud-music" ;;
         "plasma-browser-integration"*) get_song_dbus "plasma-browser-integration" ;;
         "io.elementary.music"*)        get_song_dbus "Music" ;;
@@ -2874,16 +2875,6 @@ get_song() {
             song="$(banshee --query-artist --query-album --query-title |\
                     awk -F':' '/^artist/ {a=$2} /^album/ {b=$2} /^title/ {t=$2}
                                END {print a " \n" b " \n"t}')"
-        ;;
-
-        "exaile"*)
-            # NOTE: Exaile >= 4.0.0 will support mpris2.
-            song="$(dbus-send --print-reply --dest=org.exaile.Exaile \
-                    /org/exaile/Exaile org.exaile.Exaile.Query |
-                    awk -F ':' '{sub(",[^,]*$", "", $3); t=$3;
-                                 sub(",[^,]*$", "", $4); a=$4;
-                                 sub(",[^,]*$", "", $5); b=$5}
-                                 END {print a " \n" b " \n" t}')"
         ;;
 
         "muine"*)
@@ -3304,11 +3295,11 @@ get_term_font() {
 
             [[ -f "${confs[0]}" ]] || return
 
-            term_font="$(awk '/family:/ {$1="";print}' "${confs[0]}" | head -n1)"
-            # term_font="$(awk -F ':|#' '/normal:/ {getline; print}' "${confs[0]}")"
-            # term_font="${term_font/*family:}"
-            # term_font="${term_font/$'\n'*}"
-            # term_font="${term_font/\#*}"
+            term_font="$(awk '/normal:/ {while (!/family:/ || /#/)
+                         {if (!getline) {exit}} print; exit}' "${confs[0]}")"
+            term_font="${term_font/*family:}"
+            term_font="${term_font/$'\n'*}"
+            term_font="${term_font/\#*}"
         ;;
 
         "Apple_Terminal")
@@ -4993,7 +4984,7 @@ TEXT FORMATTING:
 
 COLOR BLOCKS:
     --color_blocks on/off       Enable/Disable the color blocks
-    --col_offset auto/num      Left-padding of color blocks
+    --col_offset auto/num       Left-padding of color blocks
     --block_width num           Width of color blocks in spaces
     --block_height num          Height of color blocks in lines
     --block_range num num       Range of colors to print as blocks
@@ -7825,6 +7816,32 @@ EOF
 EOF
         ;;
 
+        "LibreELEC"*)
+            set_colors 2 3 7 14 13
+            read -rd '' ascii_data <<'EOF'
+${c1}          :+ooo/.      ${c2}./ooo+:
+${c1}        :+ooooooo/.  ${c2}./ooooooo+:
+${c1}      :+ooooooooooo:${c2}:ooooooooooo+:
+${c1}    :+ooooooooooo+-  ${c2}-+ooooooooooo+:
+${c1}  :+ooooooooooo+-  ${c3}--  ${c2}-+ooooooooooo+:
+${c1}.+ooooooooooo+-  ${c3}:+oo+:  ${c2}-+ooooooooooo+-
+${c1}-+ooooooooo+-  ${c3}:+oooooo+:  ${c2}-+oooooooooo-
+${c1}  :+ooooo+-  ${c3}:+oooooooooo+:  ${c2}-+oooooo:
+${c1}    :+o+-  ${c3}:+oooooooooooooo+:  ${c2}-+oo:
+${c4}     ./   ${c3}:oooooooooooooooooo:   ${c5}/.
+${c4}   ./oo+:  ${c3}-+oooooooooooooo+-  ${c5}:+oo/.
+${c4} ./oooooo+:  ${c3}-+oooooooooo+-  ${c5}:+oooooo/.
+${c4}-oooooooooo+:  ${c3}-+oooooo+-  ${c5}:+oooooooooo-
+${c4}.+ooooooooooo+:  ${c3}-+oo+-  ${c5}:+ooooooooooo+.
+${c4}  -+ooooooooooo+:  ${c3}..  ${c5}:+ooooooooooo+-
+${c4}    -+ooooooooooo+:  ${c5}:+ooooooooooo+-
+${c4}      -+oooooooooo+:${c5}:+oooooooooo+-
+${c4}        -+oooooo+:    ${c5}:+oooooo+-
+${c4}          -+oo+:        ${c5}:+oo+-
+${c4}            ..            ${c5}..
+EOF
+        ;;
+
         "Linux")
             set_colors fg 8 3
             read -rd '' ascii_data <<'EOF'
@@ -7908,26 +7925,26 @@ EOF
         "Lubuntu"*)
             set_colors 4 7 1
             read -rd '' ascii_data <<'EOF'
-${c1}           `-mddhhhhhhhhhddmss`
-        ./mdhhhhhhhhhhhhhhhhhhhhhh.
-     :mdhhhhhhhhhhhhhhhhhhhhhhhhhhhm`
-   :ymhhhhhhhhhhhhhhhyyyyyyhhhhhhhhhy:
-  `odhyyyhhhhhhhhhy+-````./syhhhhhhhho`
- `hhy..:oyhhhhhhhy-`:osso/..:/++oosyyyh`
- dhhs   .-/syhhhhs`shhhhhhyyyyyyyyyyyyhs
-:hhhy`  yso/:+syhy/yhhhhhshhhhhhhhhhhhhh:
-hhhhho. +hhhys++oyyyhhhhh-yhhhhhhhhhhhhhs
-hhhhhhs-`/syhhhhyssyyhhhh:-yhhhhhhhhhhhhh
-hhhhhhs  `:/+ossyyhyyhhhhs -yhhhhhhhhhhhh
-hhhhhhy/ `syyyssyyyyhhhhhh: :yhhhhhhhhhhs
-:hhhhhhyo:-/osyhhhhhhhhhhho  ohhhhhhhhhh:
- sdhhhhhhhyyssyyhhhhhhhhhhh+  +hhhhhhhhs
- `shhhhhhhhhhhhhhhhhhhhhhy+` .yhhhhhhhh`
-  +sdhhhhhhhhhhhhhhhhhyo/. `/yhhhhhhhd`
-   `:shhhhhhhhhh+---..``.:+yyhhhhhhh:
-     `:mdhhhhhh/.syssyyyyhhhhhhhd:`
-        `+smdhhh+shhhhhhhhhhhhdm`
-           `sNmdddhhhhhhhddm-`
+${c1}           `.:/ossyyyysso/:.
+        `.:yyyyyyyyyyyyyyyyyy:.`
+      .:yyyyyyyyyyyyyyyyyyyyyyyy:.
+    .:yyyyyyyyyyyyyyyyyyyyyyyyyyyy:.
+   -yyyyyyyyyyyyyy${c2}+hNMMMNh+${c1}yyyyyyyyy-
+  :yy${c2}mNy+${c1}yyyyyyyy${c2}+Nmso++smMdhyysoo+${c1}yy:
+ -yy${c2}+MMMmmy${c1}yyyyyy${c2}hh${c1}yyyyyyyyyyyyyyyyyyy-
+.yyyy${c2}NMN${c1}yy${c2}shhs${c1}yyy${c2}+o${c1}yyyyyyyyyyyyyyyyyyyy.
+:yyyy${c2}oNM+${c1}yyyy${c2}+sso${c1}yyyyyyy${c2}ss${c1}yyyyyyyyyyyyy:
+:yyyyy${c2}+dNs${c1}yyyyyyy${c2}++${c1}yyyyy${c2}oN+${c1}yyyyyyyyyyyy:
+:yyyyy${c2}oMMmhysso${c1}yyyyyyyyyy${c2}mN+${c1}yyyyyyyyyyy:
+:yyyyyy${c2}hMm${c1}yyyyy${c2}+++${c1}yyyyyyy${c2}+MN${c1}yyyyyyyyyyy:
+.yyyyyyy${c2}ohmy+${c1}yyyyyyyyyyyyy${c2}NMh${c1}yyyyyyyyyy.
+ -yyyyyyyyyy${c2}++${c1}yyyyyyyyyyyy${c2}MMh${c1}yyyyyyyyy-
+  :yyyyyyyyyyyyyyyyyyyyy${c2}+mMN+${c1}yyyyyyyy:
+   -yyyyyyyyyyyyyyyyy${c2}+sdMMd+${c1}yyyyyyyy-
+    .:yyyyyyyyy${c2}hmdmmNMNdy+${c1}yyyyyyyy:.
+      .:yyyyyyy${c2}my${c1}yyyyyyyyyyyyyyy:.
+        `.:yyyy${c2}s${c1}yyyyyyyyyyyyy:.`
+           `.:/oosyyyysso/:.`
 EOF
         ;;
 
@@ -10123,28 +10140,28 @@ EOF
         ;;
 
         "Ubuntu Cinnamon"* | "Ubuntu-Cinnamon"*)
-            set_colors 1
+            set_colors 1 7
             read -rd '' ascii_data <<'EOF'
-${c1}            .-:/++oooo++/:-.
-        `:/oooooooooooooooooo/-`
-      -/oooooooooooooooooooo+ooo/-
-    .+oooooooooooooooooo+/-`.ooooo+.
-   :oooooooooooo+//:://++:. .ooooooo:
-  /oooooooooo+o:`.----.``./+/oooooooo/
- /ooooooooo+. +ooooooooo+:``/ooooooooo/
-.ooooooooo: .+ooooooooooooo- -ooooooooo.
-/oooooo/o+ .ooooooo:`+oo+ooo- :oooooooo/
-ooo+:. .o: :ooooo:` .+/. ./o+:/ooooooooo
-oooo/-`.o: :ooo/` `/+.     ./.:ooooooooo
-/oooooo+o+``++. `:+-          /oooooooo/
-.ooooooooo/``  -+:`          :ooooooooo.
- /ooooooooo+--+/`          .+ooooooooo/
-  /ooooooooooo+.`      `.:++:oooooooo/
-   :oooooooooooooo++++oo+-` .ooooooo:
-    .+ooooooooooooooooooo+:..ooooo+.
-      -/oooooooooooooooooooooooo/-
-        `-/oooooooooooooooooo/:`
-            .-:/++oooo++/:-.
+${c1}            .-/+oooooooo+/-.
+        `:+oooooooooooooooooo+:`
+      -+oooooooooooooooooooooooo+-
+    .ooooooooooooooooooo${c2}:ohNd${c1}oooooo.
+   /oooooooooooo${c2}:/+oo++:/ohNd${c1}ooooooo/
+  +oooooooooo${c2}:osNdhyyhdNNh+:+${c1}oooooooo+
+ /ooooooooo${c2}/dN/${c1}ooooooooo${c2}/sNNo${c1}ooooooooo/
+.ooooooooo${c2}oMd:${c1}oooooooooooo${c2}:yMy${c1}ooooooooo.
++ooooo${c2}:+o/Md${c1}oooooo${c2}:sm/${c1}oo/ooo${c2}yMo${c1}oooooooo+
+ooo${c2}:sdMdosMo${c1}ooooo${c2}oNMd${c1}//${c2}dMd+${c1}o${c2}:so${c1}ooooooooo
+oooo${c2}+ymdosMo${c1}ooo${c2}+mMm${c1}+/${c2}hMMMMMh+hs${c1}ooooooooo
++oooooo${c2}:${c1}:${c2}/Nm:${c1}/${c2}hMNo${c1}:y${c2}MMMMMMMMMM+${c1}oooooooo+
+.ooooooooo${c2}/NNMNy${c1}:o${c2}NMMMMMMMMMMo${c1}ooooooooo.
+/oooooooooo${c2}:yh:${c1}+m${c2}MMMMMMMMMMd/${c1}ooooooooo/
+  +oooooooooo${c2}+${c1}/h${c2}mMMMMMMNds//o${c1}oooooooo+
+   /oooooooooooo${c2}+:////:o/ymMd${c1}ooooooo/
+    .oooooooooooooooooooo${c2}/sdh${c1}oooooo.
+      -+oooooooooooooooooooooooo+-
+        `:+oooooooooooooooooo+:`
+            .-/+oooooooo+/-.
 EOF
         ;;
 
@@ -10199,26 +10216,27 @@ EOF
         "Ubuntu MATE"* | "Ubuntu-MATE"*)
             set_colors 2 7
             read -rd '' ascii_data <<'EOF'
-${c1}           `:+shmNNMMNNmhs+:`
-        .odMMMMMMMMMMMMMMMMMMdo.
-      /dMMMMMMMMMMMMMMMmMMMMMMMMd/
-    :mMMMMMMMMMMMMNNNNM/`/yNMMMMMMm:
-  `yMMMMMMMMMms:..-::oM:    -omMMMMMy`
- `dMMMMMMMMy-.odNMMMMMM:    -odMMMMMMd`
- hMMMMMMMm-.hMMy/....+M:`/yNm+mMMMMMMMh
-/MMMMNmMN-:NMy`-yNMMMMMmNyyMN:`dMMMMMMM/
-hMMMMm -odMMh`sMMMMMMMMMMs sMN..MMMMMMMh
-NMMMMm    `/yNMMMMMMMMMMMM: MM+ mMMMMMMN
-NMMMMm    `/yNMMMMMMMMMMMM: MM+ mMMMMMMN
-hMMMMm -odMMh sMMMMMMMMMMs oMN..MMMMMMMh
-/MMMMNNMN-:NMy`-yNMMMMMNNsyMN:`dMMMMMMM/
- hMMMMMMMm-.hMMy/....+M:.+hNd+mMMMMMMMh
- `dMMMMMMMMy-.odNMMMMMM:    :smMMMMMMd`
-   yMMMMMMMMMms/..-::oM:    .+dMMMMMy
-    :mMMMMMMMMMMMMNNNNM: :smMMMMMMm:
-      /dMMMMMMMMMMMMMMMdNMMMMMMMd/
-        .odMMMMMMMMMMMMMMMMMMdo.
-           `:+shmNNMMNNmhs+:`
+${c1}            .:/+oossssoo+/:.`
+        `:+ssssssssssssssssss+:`
+      -+sssssssssssssss${c2}y${c1}ssssssss+-
+    .osssssssssssss${c2}yy${c1}ss${c2}mMmh${c1}ssssssso.
+   /sssssssss${c2}ydmNNNmmd${c1}s${c2}mMMMMNdy${c1}sssss/
+ `+ssssssss${c2}hNNdy${c1}sssssss${c2}mMMMMNdy${c1}ssssss+`
+ +sssssss${c2}yNNh${c1}ss${c2}hmNNNNm${c1}s${c2}mMmh${c1}s${c2}ydy${c1}sssssss+
+-sssss${c2}y${c1}ss${c2}Nm${c1}ss${c2}hNNh${c1}ssssss${c2}y${c1}s${c2}hh${c1}ss${c2}mMy${c1}sssssss-
++ssss${c2}yMNdy${c1}ss${c2}hMd${c1}ssssssssss${c2}hMd${c1}ss${c2}NN${c1}sssssss+
+sssss${c2}yMMMMMmh${c1}sssssssssssss${c2}NM${c1}ss${c2}dMy${c1}sssssss
+sssss${c2}yMMMMMmhy${c1}ssssssssssss${c2}NM${c1}ss${c2}dMy${c1}sssssss
++ssss${c2}yMNdy${c1}ss${c2}hMd${c1}ssssssssss${c2}hMd${c1}ss${c2}NN${c1}sssssss+
+-sssss${c2}y${c1}ss${c2}Nm${c1}ss${c2}hNNh${c1}ssssssss${c2}dh${c1}ss${c2}mMy${c1}sssssss-
+ +sssssss${c2}yNNh${c1}ss${c2}hmNNNNm${c1}s${c2}mNmh${c1}s${c2}ymy${c1}sssssss+
+  +ssssssss${c2}hNNdy${c1}sssssss${c2}mMMMMmhy${c1}ssssss+
+   /sssssssss${c2}ydmNNNNmd${c1}s${c2}mMMMMNdh${c1}sssss/
+    .osssssssssssss${c2}yy${c1}ss${c2}mMmdy${c1}sssssso.
+      -+sssssssssssssss${c2}y${c1}ssssssss+-
+        `:+ssssssssssssssssss+:`
+            .:/+oossssoo+/:.
+
 EOF
         ;;
 
@@ -10444,26 +10462,26 @@ EOF
         "Xubuntu"*)
             set_colors 4 7 1
             read -rd '' ascii_data <<'EOF'
-${c1}           `-/osyhddddhyso/-`
-        .+yddddddddddddddddddy+.
-      :yddddddddddddddddddddddddy:
-    -yddddddddddddddddddddhdddddddy-
-   odddddddddddyshdddddddh`dddd+ydddo
- `yddddddhshdd-   ydddddd+`ddh.:dddddy`
- sddddddy   /d.   :dddddd-:dy`-ddddddds
-:ddddddds    /+   .dddddd`yy`:ddddddddd:
-sdddddddd`    .    .-:/+ssdyodddddddddds
-ddddddddy                  `:ohddddddddd
-dddddddd.                      +dddddddd
-sddddddy                        ydddddds
-:dddddd+                      .oddddddd:
- sdddddo                   ./ydddddddds
- `yddddd.              `:ohddddddddddy`
-   oddddh/`      `.:+shdddddddddddddo
-    -ydddddhyssyhdddddddddddddddddy-
-      :yddddddddddddddddddddddddy:
-        .+yddddddddddddddddddy+.
-           `-/osyhddddhyso/-`
+${c1}           `.:/ossyyyysso/:.
+        `.yyyyyyyyyyyyyyyyyyyy.`
+      `yyyyyyyyyyyyyyyyyyyyyyyyyy`
+    `yyyyyyyyyyyyyyyyyyyy${c2}::${c1}yyyyyyyy`
+   .yyyyyyyyyyy${c2}/+:${c1}yyyyyyy${c2}ds${c1}yyy${c2}+y${c1}yyyy.
+  yyyyyyy${c2}:o/${c1}yy${c2}dMMM+${c1}yyyyy${c2}/M+${c1}y${c2}:hM+${c1}yyyyyy
+ yyyyyyy${c2}+MMMy${c1}y${c2}mMMMh${c1}yyyyy${c2}yM::mM+${c1}yyyyyyyy
+`yyyyyyy${c2}+MMMMysMMMd${c1}yyyyy${c2}dh:mN+${c1}yyyyyyyyy`
+yyyyyyyy${c2}:NMMMMmMMMMmmdhyy+/y:${c1}yyyyyyyyyyy
+yyyyyyyy${c2}+MMMMMMMMMMMMMMMMMMNho:${c1}yyyyyyyyy
+yyyyyyyy${c2}mMMMMMMMMMMMMMMMMMMMMMMy${c1}yyyyyyyy
+yyyyyyy${c2}+MMMMMMMMMMMMMMMMMMMMMMMM/${c1}yyyyyyy
+`yyyyyy${c2}sMMMMMMMMMMMMMMMMMMMMMMmo${c1}yyyyyyy`
+ yyyyyy${c2}oMMMMMMMMMMMMMMMMMMMmy+${c1}yyyyyyyyy
+  yyyyy${c2}:mMMMMMMMMMMMMMMNho/${c1}yyyyyyyyyyy
+   .yyyy${c2}:yNMMMMMMMNdyo:${c1}yyyyyyyyyyyyy.
+    `yyyyyy${c2}:/++/::${c1}yyyyyyyyyyyyyyyyy`
+      `yyyyyyyyyyyyyyyyyyyyyyyyyy`
+        `.yyyyyyyyyyyyyyyyyyyy.`
+           `.:/oosyyyysso/:.`
 EOF
         ;;
                 "IRIX"*)
