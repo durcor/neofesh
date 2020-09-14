@@ -2416,8 +2416,13 @@ get_gpu() {
     case $os in
         "Linux")
             if command -v glxinfo >/dev/null; then
-                gpu_cmd="$(glxinfo -B | awk -F':' '/OpenGL renderer/ {print $2}' | awk -F'(' '{print $1}')"
-                gpu_cmd+="@ $(awk '/*/{print $2}' /sys/class/drm/card0/device/pp_dpm_sclk)"
+                gpu_manufacturer="$(
+                    lspci -vnn | grep -A9 "VGA" | awk -F':' '/Subsystem/{print $2}' |
+                    awk -F'[' '{print $1}' | head -1 | sed 's|Device||' | sed 's|Company||' | sed 's|Limited||' | sed 's|Technology||')"
+                gpu_cmd+="$gpu_manufacturer"
+                gpu_cmd+="$(glxinfo -B | awk -F':' '/OpenGL renderer/ {print $2}' | awk -F'(' '{print $1}')"
+                gpu_clock="@ $(awk '/*/{print $2}' /sys/class/drm/card0/device/pp_dpm_sclk)"
+                gpu_cmd+="$gpu_clock"
             else
                 # Read GPUs into array.
                 gpu_cmd="$(lspci -mm | awk -F '\"|\" \"|\\(' \
