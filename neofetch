@@ -3227,7 +3227,7 @@ get_term() {
 
     if [[ "$DISPLAY" ]]; then
         if [[ "$WAYLAND_DISPLAY" ]]; then
-            term="$(swaymsg -t get_outputs)"
+            term="$(swaymsg -t get_tree | grep -B7 '"focused": true' | awk -F'"' '/name/{print $4}')"
         else
             term="$(xprop -id "$WINDOWID" | awk '/WM_CLASS/ {print $4}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')"
         fi
@@ -3838,52 +3838,88 @@ get_gpu_driver() {
                           '/Display|3D|VGA/{nr[NR+2]}; NR in nr {printf $2 ", "; exit}')"
             gpu_driver="${gpu_driver%, }"
 
-            gpu_driver=$(echo "$gpu_driver" | tr '[:lower:]' '[:upper:]')
+            gpu_driver=$(echo "${gpu_driver}" | tr '[:lower:]' '[:upper:]')
 
+            # DISPLAY=":0"
             # TODO fall back to checking for files
             # clinfo is also slow
-            ogl_info=$(glxinfo -B)
-            vk_info=$(vulkaninfo)
-            ocl_info=$(clinfo)
+            ogl_info=$(
+                if command -v glxinfo >/dev/null; then
+                    glxinfo -B 2>/dev/null
+                else
+                    echo "glxinfo not found"
+                fi
+            )
+            vk_info=$(vulkaninfo 2>/dev/null)
+            ocl_info=$(clinfo 2>/dev/null)
 
             # OpenGL Implementation in Use
-            ogl_driver=$(
-                echo "$ogl_info" |
-                awk '/OpenGL version string/{print $7}' |
-                sed 's|Mesa|RadeonSI|'
-            )
+            ogl_driver=$(echo "$ogl_info" |
+                awk '/OpenGL version string/ { print $7 }' |
+                sed 's|Mesa|RadeonSI|')
 
             # Vulkan Implementation in Use
-            vk_driver=$(
-                echo "$vk_info" |
-                awk '/deviceName/{$1="";$2="";$3="";$5="";print}' |
-                sed "s| ||g" | sed 's|(|/|' | sed 's|)||'
-            )
+            vk_driver=$(echo "$vk_info" |
+                awk '/deviceName/{ $1=""; $2=""; $3=""; $5=""; print }' |
+                sed "s| ||g" | sed 's|(|/|' | sed 's|)||')
 
             # OpenCL Implementation in Use
-            ocl_driver=$(
-                echo "$ocl_info" |
-                awk '/Driver Version/{print $4}' |
-                sed 's|)||;s|(||' |
-                tr ',' '\n' | head -1 |
-                sed 's|HSA|ROCm|;s|PAL|AMDGPU-PRO/PAL|;s|\.||;s|[0-9]||g'
-            )
+            ocl_driver=$(echo "$ocl_info" |
+                awk '/Platform Name/ { $1 = ""; $2=""; print }' | sort | uniq | sed 's/ //g')
 
             # TODO: Revamp AMD Implementation Handling:
             # ex:
             #   AMDGPU + Mesa (RadeonSI + RADV/ACO) + GPUOpen (AMDVLK + ROCm)
             #   RADEON + Mesa 20.2.0 (RadeonSI + Clover) + AMDGPU-PRO (PAL)
             #   flgrx?
-            if [[ "$gpu_driver" == "amdgpu" || "$gpu_driver" == "radeon" ]]; then
-                gpu_driver+=" ($ogl_driver + $vk_driver + $ocl_driver)"
+	    #
+	    # Alternatively: stay with simple approach:
+	    # - 1 Implementation for OGL
+	    # - 1 Implementation for VK
+	    # - 1 Implementation for OCL/Compute
+	    # - Maybe implementations for other stuff?
+            case $gpu_driver in
+                "amdgpu"|"radeon")
+                    gpu_driver+=" ("
+                    [ "$ogl_driver" ] && {
+                        gpu_driver+="$ogl_driver"
+                        [ "$vk_driver" ] && gpu_driver+=" + "
+                    }
+                    [ "$vk_driver" ] && {
+                        for drv in $vk_driver; do
+                            case $vk_driver in
+                                *"Radeon"*) vk_driver="AMDVLK" ;;
+                            esac
+                        done
+                        gpu_driver+="$vk_driver"
+                        [ "$ocl_driver" ] && gpu_driver+=" + "
+                    }
+                    [ "$ocl_driver" ] && {
+                        for drv in $ocl_driver; do
+                            cur_drv=$drv
+                            case $drv in
+                                *"AMD"*)
+                                    case "$(echo "$ocl_info" | grep 'Driver Version')" in
+                                        *"HSA"*) cur_drv="ROCm";;
+                                        *"PAL"*) cur_drv="AMDGPU-PRO/PAL";;
+                                        *) cur_drv="AMD Compute";;
+                                    esac
+                                    ;;
+                            esac
+                            gpu_driver+="$cur_drv"
+                        done
+                    }
+                    # Other compute stuff?
+                    gpu_driver+=")"
 
-                IFS=" "
-                # gpu_driver+=" ($(glxinfo | \grep 'OpenGL version string' | awk '{$1="";$2="";$3="";$4="";$5="";$6="";print}' | xargs | tr '[:upper:]' '[:lower:]'))"
-            elif [[ "$gpu_driver" == *"nvidia"* ]]; then
-                gpu_driver="$(< /proc/driver/nvidia/version)"
-                gpu_driver="${gpu_driver/*Module  }"
-                gpu_driver="NVIDIA ${gpu_driver/  *}"
-            fi
+                    IFS=" "
+                    ;;
+                "nvidia")
+                    gpu_driver="$(< /proc/driver/nvidia/version)"
+                    gpu_driver="${gpu_driver/*Module  }"
+                    gpu_driver="NVIDIA ${gpu_driver/  *}"
+                    ;;
+            esac
         ;;
 
         "Mac OS X"|"macOS")
